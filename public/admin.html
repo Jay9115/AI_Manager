@@ -29,26 +29,6 @@
   <div id="message" role="status"></div>
   <section class="stats"><div class="stat"><span>Total keys</span><strong id="total">-</strong></div><div class="stat"><span>Healthy</span><strong id="healthy">-</strong></div><div class="stat"><span>Requests</span><strong id="requests">-</strong></div><div class="stat"><span>Total tokens</span><strong id="tokens">-</strong></div></section>
   <table><thead><tr><th>Key</th><th>Status</th><th>Requests</th><th>Tokens</th><th>Last used</th><th>Actions</th></tr></thead><tbody id="keys"></tbody></table>
-<script>
-const token = () => document.getElementById('adminToken').value.trim();
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
-const message = (text, error = false) => { const el = document.getElementById('message'); el.textContent = text; el.style.color = error ? '#ffae8b' : '#8ee0ae'; };
-async function load() {
-  try { const response = await fetch('/admin/api/keys', { headers: headers() }); const data = await response.json(); if (!response.ok) throw new Error(data.message); render(data.keys); message(`Updated ${new Date().toLocaleTimeString()}`); }
-  catch (error) { message(error.message || 'Could not load keys.', true); }
-}
-function render(keys) {
-  document.getElementById('total').textContent = keys.length; document.getElementById('healthy').textContent = keys.filter(k => k.enabled && k.status === 'healthy').length;
-  document.getElementById('requests').textContent = keys.reduce((sum, k) => sum + k.usage.requests, 0).toLocaleString(); document.getElementById('tokens').textContent = keys.reduce((sum, k) => sum + k.usage.totalTokens, 0).toLocaleString();
-  document.getElementById('keys').innerHTML = keys.map(key => `<tr><td>${escapeHtml(key.label)}<br><small>${key.maskedKey}</small></td><td><span class="badge ${key.enabled ? key.status : 'off'}">${key.enabled ? key.status : 'disabled'}</span></td><td>${key.usage.requests.toLocaleString()}</td><td>${key.usage.totalTokens.toLocaleString()}</td><td>${key.usage.lastUsedAt ? new Date(key.usage.lastUsedAt).toLocaleString() : 'Never'}</td><td class="actions"><button onclick="editKey('${key.id}', '${encodeURIComponent(key.label)}')">Edit</button><button onclick="toggleKey('${key.id}', ${!key.enabled})">${key.enabled ? 'Disable' : 'Enable'}</button><button class="danger" onclick="removeKey('${key.id}')">Remove</button></td></tr>`).join('');
-}
-const escapeHtml = value => String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
-async function toggleKey(id, enabled) { await updateKey(id, { enabled }); }
-async function editKey(id, encodedLabel) { const label = prompt('Label:', decodeURIComponent(encodedLabel)); if (label === null) return; const key = prompt('New Gemini API key (leave blank to keep current):'); try { await updateKey(id, { label, ...(key ? { key } : {}) }); } catch (error) { message(error.message, true); } }
-async function updateKey(id, body) { const response = await fetch(`/admin/api/keys/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify(body) }); const data = await response.json(); if (!response.ok) throw new Error(data.message); load(); }
-async function removeKey(id) { if (!confirm('Remove this API key?')) return; try { const response = await fetch(`/admin/api/keys/${id}`, { method: 'DELETE', headers: headers() }); const data = await response.json(); if (!response.ok) throw new Error(data.message); load(); } catch (error) { message(error.message, true); } }
-document.getElementById('addForm').onsubmit = async event => { event.preventDefault(); try { const response = await fetch('/admin/api/keys', { method: 'POST', headers: headers(), body: JSON.stringify({ key: document.getElementById('key').value, label: document.getElementById('label').value }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message); event.target.reset(); load(); } catch (error) { message(error.message, true); } };
-document.getElementById('refresh').onclick = load; document.getElementById('adminToken').onchange = load;
-</script>
+<script src="/admin/admin.js" defer></script>
 </body>
 </html>
